@@ -4,17 +4,36 @@
 <script type="text/javascript" src="clarifai.js"></script>
 <!-- Compiled and minified CSS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.5/css/materialize.min.css">
-
+<link rel="stylesheet" type="text/css" href="main.css">
   <!-- Compiled and minified JavaScript -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.5/js/materialize.min.js"></script>
-          
+<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
 <title>Fuzzle</title>
-</head>
+</head> 
+
+<body>
+<div class="container">
+<div class="col-md-6">
 <h1>Welcome to Fuzzle</h1>
 
 <input type="file" id="input"><br>
 <!--<img id="output">-->
 <canvas id="canvas" style="border:1px solid #000000;height: 400px;width: 400px;"></canvas>
+</div>
+<div class="col-md-6"><h3>Tags</h3><p id="tags"></p>
+<br>
+<button onclick="Fuzzle()">Fuzzle</button>
+<div id="guessPicture" style="visibility: hidden">
+<h3>Guess the picture!</h3>
+<input type="text" id="guess"></input>
+
+
+
+<h3 id="results"></h3>
+</div>
+
+</div>
+</body>
 
 <script>
 
@@ -24,33 +43,49 @@
     for(var i = 0; i < blobBin.length; i++) {
         array.push(blobBin.charCodeAt(i));
     }
-    var file=new Blob([new Uint8Array(array)], {type: 'image/jpeg'});
+    var file = new Blob([new Uint8Array(array)], {type: 'image/jpeg'});
     
-    var formdata = new FormData();
-    formdata.append("image", file);
-
     
     var dataURL = canvas.toDataURL();
-    console.log(dataURL);
+    //console.log(dataURL);
     dataURL = dataURL.substr(22);
-    console.log(dataURL);
+    //console.log(dataURL);
     run(dataURL);
-    /*
-    $.ajax({
-       url: "https://api.clarifai.com/v1/tag",
-       type: "POST",
-       data: formdata,
-       processData: false, // important
-       contentType: false  // important
-    }).complete(function(response){
-      console.log(response);
-      console.log(formdata);
-    });*/
   }
+
+
 
   function pixelToArrayPos(width, x, y) {
     return 4*(y*width+x);
   }
+  
+  function checkTags(tagGuess)
+  {
+    for(var i = 0; i < tags.length; i++)
+    {
+      if (tagGuess.toUpperCase() == tags[i].toUpperCase())
+      {
+        console.log("Tag found!");
+        $('#results').text("You Win!");
+        pictureTags.style.visibility = 'visible';
+        break;
+      }
+      else
+      {$('#results').text("Incorrect!");
+      }
+    }
+
+  }
+
+
+  var guess = document.getElementById('guess');
+  var pictureTags = document.getElementById('tags');
+  var guessPicture = document.getElementById('guessPicture');
+  guess.addEventListener("change", function() {
+    checkTags(guess.value);
+
+  });
+
 
   var input, canvas, context, output;
   input = document.getElementById("input");
@@ -59,6 +94,7 @@
   output = document.getElementById("output");
   input.addEventListener("change", function() {
     var reader = new FileReader();
+
     reader.addEventListener("loadend", function(arg) {
       var src_image = new Image();
       src_image.onload = function() {
@@ -68,7 +104,21 @@
         var imageData = canvas.toDataURL("image/png");
         //output.src = imageData;
         uploadCanvas(imageData);
-        console.log(context.getImageData(0, 0, canvas.width, canvas.height).data)
+      }
+        //console.log(context.getImageData(0, 0, canvas.width, canvas.height).data)
+        
+
+
+      
+      src_image.src = this.result;
+    });
+    reader.readAsDataURL(this.files[0]);
+  });
+
+  function Fuzzle() {
+
+        pictureTags.style.visibility = 'hidden';
+        guessPicture.style.visibility = 'visible';
         var imgData = context.getImageData(0, 0, canvas.width, canvas.height);
 
         var rows = 20;
@@ -76,14 +126,13 @@
 
         var colWidth = canvas.width/cols;
         var rowHeight = canvas.height/rows;
-        console.log(canvas.width);
-        console.log(canvas.height);
+      
 
         var used = new Array(colWidth*rowHeight);
         
         var imgDataCopy =context.getImageData(0, 0, canvas.width, canvas.height);
 
-        console.log(imgDataCopy);
+        //console.log(imgDataCopy);
 
         for (var i = 0; i < rows; i++) {
           for (var j = 0; j < cols; j++) {
@@ -117,11 +166,8 @@
         }
         console.log(imgData);
         context.putImageData(imgData,0,0);
-
-
       }
-      src_image.src = this.result;
-    });
-    reader.readAsDataURL(this.files[0]);
-  });
+
+
+
 </script>

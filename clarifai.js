@@ -34,13 +34,16 @@ function postImage(imgurl) {
     parseResponse(r);
   });
 }
-
+var tags = [];
 function parseResponse(resp) {
-  var tags = [];
+  
   if (resp.status_code === 'OK') {
     var results = resp.results;
     tags = results[0].result.tag.classes;
-    console.log(tags);
+
+    console.log(tags[0]);
+    $('#tags').text = tags[0];
+    
   } else {
     console.log('Sorry, something is wrong.');
 
