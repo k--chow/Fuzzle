@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<head>
+<title>Fuzzle</title>
+<script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script type="text/javascript" src="clarifai.js"></script>
+</head>
+
+<body>
+<h1>Welcome to Fuzzle!</h1>
+<h3>Enter an image URL!</h3>
+<input type="file" id="fileInput"/>
+
+<p>Preview the image</p>
+
+<br>
+<canvas id="myCanvas" style="border:1px solid #000000;height: 400px;width: 400px;"></canvas>
+
+<br>
+<button onclick="Fuzzle()">Fuzzle</button>
+
+    <button onclick="run($('#imgurl').val())">Get tags!</button>
+</body>
+
+<script>
+var imgd;
+var imageData;
+var ctx;
+var tempPath;
+var img = new Image;
+//img.crossOrigin = "Anonymous";
+document.getElementById('fileInput').addEventListener("change",
+	function() {
+		var url = URL.createObjectURL(e.target.files[0]);
+		var canvas = document.getElementById("myCanvas")
+		
+		console.log($('#fileInput').val());
+		ctx = canvas.getContext("2d");
+		imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+		//$('#fileInput').val();
+
+		img.onload = function() {
+			ctx.drawImage(img, 0, 0, img.width, img.height, 
+                   0, 0, canvas.width, canvas.height)
+			
+
+			imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+
+		}
+		img.src = url;
+		
+		
+	}, false)
+
+function Fuzzle() {
+	//var pix = imgd.data;
+ctx.putImageData(imageData, 0, 0)
+console.log(imageData.data);
+
+//console.log($('#imgurl').val());
+	
+	
+	
+}
+
+</script>
+</html>

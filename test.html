@@ -1,0 +1,127 @@
+
+<head>
+<script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script type="text/javascript" src="clarifai.js"></script>
+<!-- Compiled and minified CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.5/css/materialize.min.css">
+
+  <!-- Compiled and minified JavaScript -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.5/js/materialize.min.js"></script>
+          
+<title>Fuzzle</title>
+</head>
+<h1>Welcome to Fuzzle</h1>
+
+<input type="file" id="input"><br>
+<!--<img id="output">-->
+<canvas id="canvas" style="border:1px solid #000000;height: 400px;width: 400px;"></canvas>
+
+<script>
+
+  function uploadCanvas(dataURL) {
+    var blobBin = atob(dataURL.split(',')[1]);
+    var array = [];
+    for(var i = 0; i < blobBin.length; i++) {
+        array.push(blobBin.charCodeAt(i));
+    }
+    var file=new Blob([new Uint8Array(array)], {type: 'image/jpeg'});
+    
+    var formdata = new FormData();
+    formdata.append("image", file);
+
+    
+    var dataURL = canvas.toDataURL();
+    console.log(dataURL);
+    dataURL = dataURL.substr(22);
+    console.log(dataURL);
+    run(dataURL);
+    /*
+    $.ajax({
+       url: "https://api.clarifai.com/v1/tag",
+       type: "POST",
+       data: formdata,
+       processData: false, // important
+       contentType: false  // important
+    }).complete(function(response){
+      console.log(response);
+      console.log(formdata);
+    });*/
+  }
+
+  function pixelToArrayPos(width, x, y) {
+    return 4*(y*width+x);
+  }
+
+  var input, canvas, context, output;
+  input = document.getElementById("input");
+  canvas = document.getElementById("canvas");
+  context = canvas.getContext('2d');
+  output = document.getElementById("output");
+  input.addEventListener("change", function() {
+    var reader = new FileReader();
+    reader.addEventListener("loadend", function(arg) {
+      var src_image = new Image();
+      src_image.onload = function() {
+        canvas.height = src_image.height;
+        canvas.width = src_image.width;
+        context.drawImage(src_image, 0, 0);
+        var imageData = canvas.toDataURL("image/png");
+        //output.src = imageData;
+        uploadCanvas(imageData);
+        console.log(context.getImageData(0, 0, canvas.width, canvas.height).data)
+        var imgData = context.getImageData(0, 0, canvas.width, canvas.height);
+
+        var rows = 20;
+        var cols = 20;
+
+        var colWidth = canvas.width/cols;
+        var rowHeight = canvas.height/rows;
+        console.log(canvas.width);
+        console.log(canvas.height);
+
+        var used = new Array(colWidth*rowHeight);
+        
+        var imgDataCopy =context.getImageData(0, 0, canvas.width, canvas.height);
+
+        console.log(imgDataCopy);
+
+        for (var i = 0; i < rows; i++) {
+          for (var j = 0; j < cols; j++) {
+            // Swap this piece with another one
+            var randRow = Math.floor(Math.random()*rows);
+            var randCol = Math.floor(Math.random()*cols);
+
+            var randX = randCol * colWidth;
+            var randY = randRow * rowHeight;
+            var originalX = i*colWidth; 
+            var originalY = j*rowHeight;
+
+            console.log(originalX+" "+originalY);
+
+            // Go through all pixels in a piece
+            for (var x = 0; x < colWidth; x++)
+            {
+              for(var y = 0; y < rowHeight; y++)
+              {
+                for (var color = 0; color < 4; color++) {
+                    var temp = imgData.data[pixelToArrayPos(canvas.width, x+randX, y+randY)+color];
+                    
+                  imgData.data[pixelToArrayPos(canvas.width, x+randX, y+randY)+color] = imgDataCopy.data[pixelToArrayPos(canvas.width, x+originalX, y+originalY)+color];
+                   //imgDataCopy.data[pixelToArrayPos(canvas.width, x+originalX, y+originalY)+color] = temp;
+
+
+                }
+              }
+            }
+          }          
+        }
+        console.log(imgData);
+        context.putImageData(imgData,0,0);
+
+
+      }
+      src_image.src = this.result;
+    });
+    reader.readAsDataURL(this.files[0]);
+  });
+</script>
