@@ -1,66 +1,178 @@
-<!DOCTYPE html>
+
 <head>
-<title>Fuzzle</title>
 <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
 <script type="text/javascript" src="clarifai.js"></script>
-</head>
+<!-- Compiled and minified CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.5/css/materialize.min.css">
+<link rel="stylesheet" type="text/css" href="main.css">
+  <!-- Compiled and minified JavaScript -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.5/js/materialize.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+<title>Fuzzle</title>
+</head> 
 
 <body>
-<h1>Welcome to Fuzzle!</h1>
-<h3>Enter an image URL!</h3>
-<input type="file" id="fileInput"/>
+<div class="container">
+<div class="col-md-6">
+<h1>Welcome to Fuzzle</h1>
 
-<p>Preview the image</p>
-
-<br>
-<canvas id="myCanvas" style="border:1px solid #000000;height: 400px;width: 400px;"></canvas>
-
+<input type="file" id="input"><br>
+<!--<img id="output">-->
+<canvas id="canvas" style="border:1px solid #000000;height: 400px;width: 400px;"></canvas>
+</div>
+<div class="col-md-6"><h3>Tags</h3><p id="tags"></p>
 <br>
 <button onclick="Fuzzle()">Fuzzle</button>
+<div id="guessPicture" style="visibility: hidden">
+<h3>Guess the picture!</h3>
+<input type="text" id="guess"></input>
 
-    <button onclick="run($('#imgurl').val())">Get tags!</button>
+
+
+<h3 id="results"></h3>
+</div>
+
+</div>
 </body>
 
 <script>
-var imgd;
-var imageData;
-var ctx;
-var tempPath;
-var img = new Image;
-//img.crossOrigin = "Anonymous";
-document.getElementById('fileInput').addEventListener("change",
-	function() {
-		var url = URL.createObjectURL(e.target.files[0]);
-		var canvas = document.getElementById("myCanvas")
-		
-		console.log($('#fileInput').val());
-		ctx = canvas.getContext("2d");
-		imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-		//$('#fileInput').val();
 
-		img.onload = function() {
-			ctx.drawImage(img, 0, 0, img.width, img.height, 
-                   0, 0, canvas.width, canvas.height)
-			
+  //method to upload image to canvas
+  function upload(dataURL) {
+    var blobBin = atob(dataURL.split(',')[1]);
+    var array = [];
 
-			imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    for(var i = 0; i < blobBin.length; i++) {
 
-		}
-		img.src = url;
-		
-		
-	}, false)
+        array.push(blobBin.charCodeAt(i));
 
-function Fuzzle() {
-	//var pix = imgd.data;
-ctx.putImageData(imageData, 0, 0)
-console.log(imageData.data);
+    }
+    var file = new Blob([new Uint8Array(array)], {type: 'image/jpeg'});
+    var dataURL = canvas.toDataURL();
+    //console.log(dataURL);
+    dataURL = dataURL.substr(22);
+    //console.log(dataURL);
+    run(dataURL);
+  }
 
-//console.log($('#imgurl').val());
-	
-	
-	
-}
+
+  //parse the array positions from a 2D array to a 1D array
+  function pixelToArrayPos(width, x, y) {
+    return 4*(y*width+x);
+  }
+
+  //check to see if a tag was correctly guessed
+  function checkTags(tagGuess)
+  {
+    for(var i = 0; i < tags.length; i++)
+    {
+      if (tagGuess.toUpperCase() == tags[i].toUpperCase())
+      {
+        console.log("Tag found!");
+        $('#results').text("You Win!");
+        pictureTags.style.visibility = 'visible';
+        break;
+      }
+      else
+      {$('#results').text("Incorrect!");
+      }
+    }
+
+  }
+
+
+  var guess = document.getElementById('guess');
+  var pictureTags = document.getElementById('tags');
+  var guessPicture = document.getElementById('guessPicture');
+
+  guess.addEventListener("change", function() {
+    checkTags(guess.value);
+
+  });
+
+
+  var input, ctx, output, canvas;
+  input = document.getElementById("input");
+  canvas = document.getElementById("canvas");
+  ctx = canvas.getContext('2d');
+  output = document.getElementById("output");
+  input.addEventListener("change", function() {
+  var reader = new FileReader();
+
+    reader.addEventListener("loadend", function(arg) {
+      var src_image = new Image();
+      src_image.onload = function() {
+        canvas.height = src_image.height;
+        canvas.width = src_image.width;
+        ctx.drawImage(src_image, 0, 0);
+        var imageData = canvas.toDataURL("image/png");
+        
+        upload(imageData);
+      }
+        
+        
+
+
+      
+      src_image.src = this.result;
+    });
+    reader.readAsDataURL(this.files[0]);
+  });
+
+  //algorithm to shuffle image into puzzle
+  function Fuzzle() {
+
+        pictureTags.style.visibility = 'hidden';
+        guessPicture.style.visibility = 'visible';
+        var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+        var rows = 20;
+        var cols = 20;
+
+        var colWidth = canvas.width/cols;
+        var rowHeight = canvas.height/rows;
+      
+
+        var used = new Array(colWidth*rowHeight);
+        
+        var imgDataCopy = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+        //console.log(imgDataCopy);
+
+        for (var i = 0; i < rows; i++) {
+          for (var j = 0; j < cols; j++) {
+            // Swap this piece with another one
+            var randRow = Math.floor(Math.random()*rows);
+            var randCol = Math.floor(Math.random()*cols);
+
+            var randX = randCol * colWidth;
+            var randY = randRow * rowHeight;
+            var originalX = i*colWidth; 
+            var originalY = j*rowHeight;
+
+            console.log(originalX+" "+originalY);
+
+            // Go through all pixels in a piece
+            for (var x = 0; x < colWidth; x++)
+            {
+              for(var y = 0; y < rowHeight; y++)
+              {
+                for (var color = 0; color < 4; color++) {
+                    var temp = imgData.data[pixelToArrayPos(canvas.width, x+randX, y+randY)+color];
+                    
+                  imgData.data[pixelToArrayPos(canvas.width, x+randX, y+randY)+color] = imgDataCopy.data[pixelToArrayPos(canvas.width, x+originalX, y+originalY)+color];
+                   //imgDataCopy.data[pixelToArrayPos(canvas.width, x+originalX, y+originalY)+color] = temp;
+
+
+                }
+              }
+            }
+          }          
+        }
+        console.log(imgData);
+        ctx.putImageData(imgData,0,0);
+      }
+
+
 
 </script>
-</html>
